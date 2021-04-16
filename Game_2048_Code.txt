@@ -1,0 +1,218 @@
+package com.codegym.games.game2048;
+import com.codegym.engine.cell.*;
+public class Game2048 extends Game {
+    private static final int SIDE=4;
+    private int [][] gameField = new int [SIDE][SIDE];
+    private boolean  isGameStopped = false;
+    private int score;
+    public void initialize () {
+        setScreenSize(SIDE,SIDE);
+        createGame();
+        drawScene();
+    }
+    private void createGame ()  {
+        gameField=new int[SIDE][SIDE];
+        createNewNumber();
+        createNewNumber();
+    }
+   private void createNewNumber() {
+       int value= getMaxTileValue();
+         if(value>=2048)
+       {win();
+           return;
+       }
+       boolean fieldCreated = false;
+        do {
+            int x = getRandomNumber(SIDE);
+            int y = getRandomNumber(SIDE);
+            if (gameField[y][x] == 0) {
+                if(getRandomNumber(10)<9)
+                 { gameField[y][x] =  2;
+                  fieldCreated = true;}
+                  else{
+                     gameField[y][x] =  4;
+                  fieldCreated = true;
+                  }
+            }
+        }
+        while (!fieldCreated);
+    }
+    private void setCellColoredNumber(int x, int y, int value) {
+        Color color = getColorByValue(value);
+        String emptyvalue;
+       if(value==0)
+           emptyvalue="";
+        else
+       emptyvalue=Integer.toString(value);
+  setCellValueEx( x,  y, color , emptyvalue);
+    }
+     private Color getColorByValue (int value) {
+          switch (value) {
+            case 0:
+                return Color.WHITE;
+            case 2:
+                return Color.RED;
+            case 4:
+                return Color.BLUE;
+            case 8:
+                return Color.GREEN;
+            case 16:
+                return Color.YELLOW;
+            case 32:
+                return Color.ORANGE;
+            case 64:
+                return Color.SALMON;
+            case 128:
+                return Color.PINK;
+            case 256:
+                return Color.TURQUOISE;
+            case 512:
+                return Color.GOLD;
+            case 1024:
+                return Color.VIOLET;
+            case 2048:
+                return Color.MAROON;
+              default:
+              return null;
+          }
+     }
+       private void drawScene() {
+        for (int y = 0; y < SIDE; y++) {
+            for (int x = 0; x < SIDE; x++) {
+                setCellColoredNumber(x, y, gameField[y][x]);
+            }
+        }
+    }
+    private boolean compressRow(int[] row){
+        boolean shifted=false;
+    int leftposition=0;
+   for(int i=0;i<SIDE;i++){
+       if(row[i]!=0){
+        if(i!=leftposition){
+            row[leftposition]=row[i];
+            row[i]=0;
+            shifted=true;
+        }
+      leftposition++;
+   }}
+    return shifted;
+    }
+    private boolean mergeRow(int[]row) {
+          boolean merged=false;
+    for(int i=0;i<row.length-1;i++){
+        if((row[i]==row[i+1])&&row[i]!=0 ){
+            row[i]=row[i]+row[i+1];
+            row[i+1]=0;
+            merged=true;
+            score+=row[i];
+            setScore(score);
+        }
+    }
+    return merged;
+    }
+    public void onKeyPress(Key key) {
+        if(isGameStopped){
+            if(key==Key.SPACE){
+                isGameStopped=false;
+                createGame();
+                drawScene();
+                score=0;
+                setScore(score);
+            }else{
+                return;
+            }
+        }
+        if (!canUserMove()) {
+            gameOver();
+            return;
+        }        if (key == Key.UP) {	
+            moveUp();drawScene();
+        } else if (key == Key.RIGHT) {
+            moveRight();drawScene();
+        } else if (key == Key.DOWN) {
+            moveDown();drawScene();
+        } else if (key == Key.LEFT) {
+            moveLeft();drawScene();
+        }
+    }
+private void moveLeft() {
+     boolean createNeweNum=false;
+     boolean compressed=false;
+     boolean merged=false;
+    for(int[] row :gameField){
+         compressed=compressRow(row);
+         merged=mergeRow(row);
+        if(merged){
+            compressRow(row);
+        }
+        if(compressed || merged)
+             createNeweNum=true;
+    }
+    if(createNeweNum){
+       createNewNumber();
+    }
+    }
+    private void moveRight() {
+        rotateClockwise();
+        rotateClockwise();
+        moveLeft();
+        rotateClockwise();
+        rotateClockwise();
+    }
+    private void moveUp() {
+         rotateClockwise();
+        rotateClockwise();
+        rotateClockwise();
+        moveLeft();
+        rotateClockwise();
+    }
+    private void moveDown() {
+        rotateClockwise();
+        moveLeft();
+        rotateClockwise();
+        rotateClockwise();
+        rotateClockwise();
+    }
+    private void rotateClockwise(){
+        int[][] newGrid=new int[SIDE][SIDE];
+        for(int i=0;i<SIDE;i++){
+            for(int j=0;j<SIDE;j++){
+                newGrid[j][SIDE-1-i]=gameField[i][j];
+            }
+        }
+        gameField=newGrid;
+    }
+  private int getMaxTileValue() {
+        int max = gameField[0][0];
+        for (int i = 0; i < SIDE; i++) {
+            for (int j = 0; j < SIDE; j++) {
+                if (gameField[i][j] > max) {
+                    max = gameField[i][j];
+                }
+            }
+        }
+        return max;
+    }
+    private void win() {
+        showMessageDialog(Color.BLUE, "YOU ARE A WINNER", Color.GOLD, 45);
+        isGameStopped = true;
+    }
+private boolean canUserMove() {
+        for (int i = 0; i < SIDE; i++) {
+            for (int j = 0; j < SIDE; j++) {
+                if (gameField[i][j] == 0) {
+                    return true;
+                } else if (i < SIDE - 1 && gameField[i][j] == gameField[i + 1][j]) {
+                    return true;
+                } else if ((j < SIDE - 1) && gameField[i][j] == gameField[i][j + 1]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    private void gameOver(){
+        showMessageDialog(Color.RED, "GAME OVER", Color.YELLOW, 45);
+        isGameStopped = true;
+    }
+}
